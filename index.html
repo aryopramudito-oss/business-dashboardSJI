@@ -1,0 +1,982 @@
+SIMPLE ASSUMPTION MODEL & BEP: 
+COMPLEX MULTI-YEAR BUSINESS PLAN: 
+1st: 
+2nd: 
+3rd: 
+4th: 
+5th: 
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Year Business Projection Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9; /* slate-100 */
+        }
+        .input-field {
+            @apply w-full bg-slate-50 border border-slate-200 rounded-md p-2 text-right text-slate-700 transition duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
+        }
+        .label-text { @apply text-slate-600 font-medium; }
+        .calculated-value { @apply text-right text-slate-800 font-semibold; }
+        .card { @apply bg-white p-6 rounded-xl shadow-lg; }
+        .nav-tab { @apply whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm transition-colors duration-200 ease-in-out focus:outline-none cursor-pointer; }
+        .nav-tab-active { @apply border-blue-600 text-blue-600; }
+        .nav-tab-inactive { @apply border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300; }
+        .table-header { @apply sticky top-0 bg-slate-100 p-2 text-sm font-semibold text-slate-600 text-center z-10; }
+        .table-cell { @apply p-1; }
+        .table-row-header { @apply sticky left-0 bg-white p-2 text-sm font-medium text-slate-700 text-left; }
+        .section-header-row { @apply bg-slate-100 font-semibold text-slate-800; }
+        .accordion-button { @apply w-full flex justify-between items-center p-4 bg-slate-200 hover:bg-slate-300 rounded-lg text-lg font-bold text-slate-700 transition; }
+        .accordion-content { @apply mt-4 space-y-6; }
+    </style>
+</head>
+<body class="p-4 sm:p-6 md:p-8">
+
+    <div class="max-w-7xl mx-auto">
+        <header class="mb-6">
+            <h1 class="text-3xl font-bold text-slate-800 text-center">Multi-Year Business Projection Dashboard</h1>
+            <div class="mt-4 flex flex-col sm:flex-row justify-center items-center gap-4">
+                <div class="border-b border-slate-200">
+                    <nav class="-mb-px flex flex-wrap justify-center gap-x-8" aria-label="Tabs">
+                        <button id="nav-assumptions" onclick="switchView('assumptions')" class="nav-tab">Revenue Assumptions</button>
+                        <button id="nav-opex-assumptions" onclick="switchView('opex-assumptions')" class="nav-tab">OPEX Assumptions</button>
+                        <button id="nav-monthly" onclick="switchView('monthly')" class="nav-tab">Monthly Details</button>
+                        <button id="nav-yearly-details" onclick="switchView('yearly-details')" class="nav-tab">Yearly Details</button>
+                        <button id="nav-summary" onclick="switchView('summary')" class="nav-tab">Financial Summary</button>
+                    </nav>
+                </div>
+                <div class="flex gap-2">
+                    <button id="save-button" onclick="saveSettings()" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors shadow-sm">
+                        Save Settings
+                    </button>
+                    <button id="export-button" onclick="exportToCSV()" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors shadow-sm">
+                        Export to CSV
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main id="view-assumptions" class="space-y-6"></main>
+        <main id="view-opex-assumptions" class="hidden space-y-6"></main>
+
+        <main id="view-monthly" class="hidden">
+            <div class="card">
+                <div class="flex justify-between items-center border-b pb-4 mb-4">
+                     <h2 class="text-xl font-bold text-slate-700">Monthly Financial Details (P&L)</h2>
+                     <div>
+                        <label for="monthly-year-selector" class="text-sm font-medium text-slate-600 mr-2">Select Year:</label>
+                        <select id="monthly-year-selector" class="rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"></select>
+                     </div>
+                </div>
+                <div id="monthly-details-container" class="overflow-x-auto"></div>
+            </div>
+        </main>
+
+        <main id="view-yearly-details" class="hidden">
+             <div class="card overflow-x-auto">
+                <h2 class="text-xl font-bold text-slate-700 border-b pb-3 mb-4">Yearly Financial Details (P&L)</h2>
+                <table id="yearly-details-table" class="w-full border-collapse min-w-[800px]"></table>
+            </div>
+        </main>
+
+        <main id="view-summary" class="hidden space-y-8">
+            <div class="card overflow-x-auto">
+                <h2 class="text-xl font-bold text-slate-700 border-b pb-3 mb-4">Profit and Loss Projection - Summary</h2>
+                <table id="pnl-summary-table" class="w-full border-collapse min-w-[800px]"></table>
+            </div>
+             <div class="card overflow-x-auto">
+                <h2 class="text-xl font-bold text-slate-700 border-b pb-3 mb-4">Key Financial Ratios</h2>
+                <table id="ratios-summary-table" class="w-full border-collapse min-w-[800px]"></table>
+            </div>
+            <div class="card overflow-x-auto">
+                <h2 class="text-xl font-bold text-slate-700 border-b pb-3 mb-4">Loan Amortization Schedule</h2>
+                <table id="amortization-summary-table" class="w-full border-collapse min-w-[800px]"></table>
+            </div>
+            <div class="card overflow-x-auto">
+                <h2 class="text-xl font-bold text-slate-700 border-b pb-3 mb-4">Investment Summary</h2>
+                <div id="investment-summary-container"></div>
+            </div>
+            <div class="card overflow-x-auto">
+                <h2 class="text-xl font-bold text-slate-700 border-b pb-3 mb-4">Cash Flow Projection</h2>
+                <table id="cashflow-summary-table" class="w-full border-collapse min-w-[800px]"></table>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // --- CONFIGURATION & STATE ---
+        const years = [2026, 2027, 2028, 2029, 2030];
+        const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+        const monthLabels = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        const opexItems = [
+            { id: 'salary', label: 'Salary & Bonus', value: 0 }, { id: 'professionalFee', label: 'Professional Fee', value: 0 },
+            { id: 'electricity', label: 'Electricity & Utility', value: 0 }, { id: 'it', label: 'IT & Telephone', value: 0 },
+            { id: 'rent', label: 'Rent Office', value: 0 }, { id: 'transportation', label: 'Transportation', value: 0 },
+            { id: 'officeExpense', label: 'Office Expense', value: 0 }, { id: 'accommodation', label: 'Accommodation', value: 0 },
+        ];
+        const allInputIds = [];
+        const financialStructure = [
+            { id: 'revenue', label: 'Revenue', type: 'calc', class: 'font-bold' },
+            { id: 'cogs', label: 'Cost of Goods Sold (COGS)', type: 'calc', indent: true },
+            { id: 'grossMargin', label: 'Gross Margin', type: 'total', class: 'text-blue-600 font-bold border-t' },
+            { type: 'spacer' },
+            { label: 'Operational Expenses', type: 'header' },
+            ...opexItems.map(item => ({ ...item, type: 'input' })),
+            { id: 'totalOpex', label: 'Total Operational Expenses', type: 'total', class: 'text-red-600 font-semibold border-t' },
+            { type: 'spacer' },
+            { id: 'ebit', label: 'Earning Before Interest & Tax (EBIT)', type: 'total', class: 'font-bold border-t' },
+            { id: 'interestExpense', label: 'Interest Expense', type: 'calc', indent: true, class: 'text-orange-600' },
+            { id: 'ebt', label: 'Earning Before Income Tax (EBT)', type: 'total', class: 'font-bold' },
+            { id: 'tax', label: 'Corporate Income Tax', type: 'calc', indent: true, class: 'text-orange-600' },
+            { id: 'eat', label: 'Earning After Income Tax (EAT)', type: 'grand-total', class: 'font-bold border-t-2 border-slate-400' },
+        ];
+
+        // --- UI & FORMATTING UTILITIES ---
+
+        function switchView(view) {
+            ['assumptions', 'opex-assumptions', 'monthly', 'yearly-details', 'summary'].forEach(v => {
+                document.getElementById(`view-${v}`).classList.add('hidden');
+                document.getElementById(`nav-${v}`).classList.remove('nav-tab-active');
+                document.getElementById(`nav-${v}`).classList.add('nav-tab-inactive');
+            });
+            document.getElementById(`view-${view}`).classList.remove('hidden');
+            document.getElementById(`nav-${view}`).classList.remove('nav-tab-inactive');
+            document.getElementById(`nav-${view}`).classList.add('nav-tab-active');
+        }
+
+        const formatCurrency = (value) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(Math.round(value));
+        const formatPercentage = (value) => `${value.toFixed(2)}%`;
+        const formatRatio = (value) => isFinite(value) ? value.toFixed(2) : 'N/A';
+
+        const getNumber = (id) => {
+            const el = document.getElementById(id);
+            if (!el) return 0;
+            const value = String(el.value).replace(/\./g, '').replace(/,/g, '.'); // Handle both dot and comma separators
+            return parseFloat(value) || 0;
+        };
+
+        function formatInput(element) {
+            if (!element) return;
+            const value = element.value.replace(/\./g, '');
+            if (isNaN(value) || value === '') {
+                element.value = '0';
+                return;
+            }
+            element.value = new Intl.NumberFormat('de-DE').format(parseInt(value, 10));
+        }
+
+        // --- CORE CALCULATION LOGIC ---
+
+        function calculateAll() {
+            updateGlobalAssumptionDisplays();
+            const allYearlyTotals = {};
+            let cumulativeCashInjection = 0;
+            let openingCashBalance = 0;
+            let openingLoanBalance = getNumber('initial-debt');
+
+            years.forEach(year => {
+                const cashInjection = getNumber(`cash-injection-${year}`);
+                cumulativeCashInjection += cashInjection;
+                allYearlyTotals[year] = calculateYear(year, cumulativeCashInjection, openingCashBalance, openingLoanBalance);
+                openingCashBalance = allYearlyTotals[year].closingCashBalance;
+                openingLoanBalance = allYearlyTotals[year].endingLoanBalance;
+            });
+            updateFinancialSummary(allYearlyTotals);
+            updateYearlyDetails(allYearlyTotals);
+        }
+
+        function calculateYear(year, cumulativeCashInjection, openingCashBalance, openingLoanBalance) {
+            const cogsPerContainer = getNumber(`cogs-per-container-${year}`);
+            const salesMargin = getNumber(`sales-margin-${year}`) / 100;
+            const taxRate = getNumber('corporate-tax-rate') / 100;
+            const nonCurrentAssets = getNumber('non-current-assets');
+            const initialDebt = getNumber('initial-debt');
+            const initialEquity = getNumber('initial-equity');
+            const interestRate = getNumber('annual-interest-rate') / 100;
+            const loanTerm = getNumber('loan-term-years');
+            const dividendPayoutRatio = getNumber('dividend-payout-ratio') / 100;
+
+            let yearlyTotals = { revenue: 0, cogs: 0, grossMargin: 0, totalOpex: 0, ebit: 0, interestExpense: 0, ebt: 0, tax: 0, eat: 0 };
+            opexItems.forEach(item => yearlyTotals[item.id] = 0);
+
+            months.forEach(month => {
+                const containersSold = getNumber(`containers-${year}-${month}`);
+                const revenue = (cogsPerContainer * containersSold) * (1 + salesMargin);
+                const cogs = cogsPerContainer * containersSold;
+               
+                const revenueCalcEl = document.getElementById(`revenue-calc-${year}-${month}`);
+                if (revenueCalcEl) revenueCalcEl.textContent = formatCurrency(revenue);
+
+                const cogsCalcEl = document.getElementById(`cogs-calc-${year}-${month}`);
+                if (cogsCalcEl) cogsCalcEl.textContent = formatCurrency(cogs);
+               
+                const gpCalcEl = document.getElementById(`grossprofit-calc-${year}-${month}`);
+                if (gpCalcEl) gpCalcEl.textContent = formatCurrency(revenue - cogs);
+
+                let monthlyOpex = 0;
+                opexItems.forEach(item => {
+                    const opexValue = getNumber(`${item.id}-${year}-${month}`);
+                    monthlyOpex += opexValue;
+                    yearlyTotals[item.id] += opexValue;
+                });
+               
+                yearlyTotals.revenue += revenue;
+                yearlyTotals.cogs += cogs;
+                yearlyTotals.totalOpex += monthlyOpex;
+            });
+           
+            yearlyTotals.grossMargin = yearlyTotals.revenue - yearlyTotals.cogs;
+            yearlyTotals.ebit = yearlyTotals.grossMargin - yearlyTotals.totalOpex;
+
+            // Loan Amortization
+            const annualPayment = (loanTerm > 0 && interestRate > 0) ? initialDebt * (interestRate * Math.pow(1 + interestRate, loanTerm)) / (Math.pow(1 + interestRate, loanTerm) - 1) : (loanTerm > 0 ? initialDebt / loanTerm : 0);
+            yearlyTotals.annualPayment = openingLoanBalance > 0 ? Math.min(annualPayment, openingLoanBalance * (1 + interestRate)) : 0;
+            yearlyTotals.interestExpense = openingLoanBalance * interestRate;
+            yearlyTotals.principalRepayment = yearlyTotals.annualPayment - yearlyTotals.interestExpense;
+            yearlyTotals.endingLoanBalance = openingLoanBalance - yearlyTotals.principalRepayment;
+            if (yearlyTotals.endingLoanBalance < 0) yearlyTotals.endingLoanBalance = 0;
+
+            yearlyTotals.ebt = yearlyTotals.ebit - yearlyTotals.interestExpense;
+            yearlyTotals.tax = yearlyTotals.ebt > 0 ? yearlyTotals.ebt * taxRate : 0;
+            yearlyTotals.eat = yearlyTotals.ebt - yearlyTotals.tax;
+            yearlyTotals.dividends = yearlyTotals.eat * dividendPayoutRatio;
+
+            // Cash Flow Calculations
+            const cashInjection = getNumber(`cash-injection-${year}`);
+            yearlyTotals.netCashFlow = yearlyTotals.eat + cashInjection - yearlyTotals.dividends - yearlyTotals.principalRepayment;
+            yearlyTotals.closingCashBalance = openingCashBalance + yearlyTotals.netCashFlow;
+
+            // Ratio Calculations
+            yearlyTotals.grossMarginRatio = yearlyTotals.revenue === 0 ? 0 : (yearlyTotals.grossMargin / yearlyTotals.revenue) * 100;
+            yearlyTotals.opexRatio = yearlyTotals.revenue === 0 ? 0 : (yearlyTotals.totalOpex / yearlyTotals.revenue) * 100;
+            yearlyTotals.netProfitMargin = yearlyTotals.revenue === 0 ? 0 : (yearlyTotals.eat / yearlyTotals.revenue) * 100;
+           
+            const currentAssets = yearlyTotals.closingCashBalance;
+            const currentLiabilities = (yearlyTotals.cogs / 12) + (yearlyTotals.totalOpex / 12);
+            yearlyTotals.currentRatio = currentLiabilities === 0 ? Infinity : currentAssets / currentLiabilities;
+
+            const totalAssets = currentAssets + nonCurrentAssets;
+            yearlyTotals.assetTurnover = totalAssets === 0 ? 0 : yearlyTotals.revenue / totalAssets;
+           
+            yearlyTotals.debtToEquity = initialEquity === 0 ? Infinity : initialDebt / initialEquity;
+            yearlyTotals.debtToAsset = totalAssets === 0 ? 0 : initialDebt / totalAssets;
+
+            yearlyTotals.cashFlowToRevenue = yearlyTotals.revenue === 0 ? 0 : (yearlyTotals.netCashFlow / yearlyTotals.revenue) * 100;
+            yearlyTotals.roi = cumulativeCashInjection === 0 ? 0 : (yearlyTotals.eat / cumulativeCashInjection) * 100;
+
+            updateYearlyUIDisplays(year, yearlyTotals);
+            return yearlyTotals;
+        }
+
+        // --- UI UPDATE FUNCTIONS ---
+
+        function updateGlobalAssumptionDisplays() {
+            const initialDebt = getNumber('initial-debt');
+            const initialEquity = getNumber('initial-equity');
+            const totalCapital = initialDebt + initialEquity;
+
+            const debtPercentage = totalCapital === 0 ? 0 : (initialDebt / totalCapital) * 100;
+            const equityPercentage = totalCapital === 0 ? 0 : (initialEquity / totalCapital) * 100;
+
+            const totalCapitalEl = document.getElementById('total-capital');
+            const debtPercentageEl = document.getElementById('debt-percentage');
+            const equityPercentageEl = document.getElementById('equity-percentage');
+
+            if(totalCapitalEl) totalCapitalEl.textContent = formatCurrency(totalCapital);
+            if(debtPercentageEl) debtPercentageEl.textContent = `${formatPercentage(debtPercentage)}`;
+            if(equityPercentageEl) equityPercentageEl.textContent = `${formatPercentage(equityPercentage)}`;
+        }
+
+        function updateYearlyUIDisplays(year, yearlyTotals) {
+            const containersTotalEl = document.getElementById(`containers-total-${year}`);
+            if(containersTotalEl) containersTotalEl.textContent = months.reduce((acc, m) => acc + getNumber(`containers-${year}-${m}`), 0).toLocaleString('de-DE');
+
+            const revenueTotalEl = document.getElementById(`revenue-calc-total-${year}`);
+            if(revenueTotalEl) revenueTotalEl.textContent = formatCurrency(yearlyTotals.revenue);
+           
+            const cogsTotalEl = document.getElementById(`cogs-calc-total-${year}`);
+            if(cogsTotalEl) cogsTotalEl.textContent = formatCurrency(yearlyTotals.cogs);
+           
+            const gpTotalEl = document.getElementById(`grossprofit-calc-total-${year}`);
+            if(gpTotalEl) gpTotalEl.textContent = formatCurrency(yearlyTotals.grossMargin);
+
+            if (document.getElementById(`monthly-table-${year}`)) {
+                months.forEach(month => {
+                    const containersSold = getNumber(`containers-${year}-${month}`);
+                    const cogsPerContainer = getNumber(`cogs-per-container-${year}`);
+                    const salesMargin = getNumber(`sales-margin-${year}`) / 100;
+                    const revenue = (cogsPerContainer * containersSold) * (1 + salesMargin);
+                    const cogs = cogsPerContainer * containersSold;
+                    const grossMargin = revenue - cogs;
+                    let monthlyOpex = 0;
+                    opexItems.forEach(item => monthlyOpex += getNumber(`${item.id}-${year}-${month}`));
+                    const monthlyEbit = grossMargin - monthlyOpex;
+                    const monthlyInterest = yearlyTotals.interestExpense / 12; // Simplified monthly interest
+                    const monthlyEbt = monthlyEbit - monthlyInterest;
+
+                    const elements = {
+                        revenue: document.getElementById(`revenue-${year}-${month}`),
+                        cogs: document.getElementById(`cogs-${year}-${month}`),
+                        grossMargin: document.getElementById(`grossMargin-${year}-${month}`),
+                        totalOpex: document.getElementById(`totalOpex-${year}-${month}`),
+                        ebit: document.getElementById(`ebit-${year}-${month}`),
+                        interestExpense: document.getElementById(`interestExpense-${year}-${month}`),
+                        ebt: document.getElementById(`ebt-${year}-${month}`),
+                    };
+
+                    if(elements.revenue) elements.revenue.textContent = formatCurrency(revenue);
+                    if(elements.cogs) elements.cogs.textContent = formatCurrency(cogs);
+                    if(elements.grossMargin) elements.grossMargin.textContent = formatCurrency(grossMargin);
+                    if(elements.totalOpex) elements.totalOpex.textContent = formatCurrency(monthlyOpex);
+                    if(elements.ebit) elements.ebit.textContent = formatCurrency(monthlyEbit);
+                    if(elements.interestExpense) elements.interestExpense.textContent = formatCurrency(monthlyInterest);
+                    if(elements.ebt) elements.ebt.textContent = formatCurrency(monthlyEbt);
+                });
+
+                const yearTotalRevenueEl = document.getElementById(`revenue-total-${year}`);
+                if(yearTotalRevenueEl) yearTotalRevenueEl.textContent = formatCurrency(yearlyTotals.revenue);
+               
+                const yearTotalCogsEl = document.getElementById(`cogs-total-${year}`);
+                if(yearTotalCogsEl) yearTotalCogsEl.textContent = formatCurrency(yearlyTotals.cogs);
+
+                const yearTotalGrossMarginEl = document.getElementById(`grossMargin-total-${year}`);
+                if(yearTotalGrossMarginEl) yearTotalGrossMarginEl.textContent = formatCurrency(yearlyTotals.grossMargin);
+               
+                opexItems.forEach(item => {
+                    const el = document.getElementById(`${item.id}-total-${year}`);
+                    if (el) el.textContent = formatCurrency(yearlyTotals[item.id]);
+                });
+
+                const yearTotalOpexEl = document.getElementById(`totalOpex-total-${year}`);
+                if(yearTotalOpexEl) yearTotalOpexEl.textContent = formatCurrency(yearlyTotals.totalOpex);
+
+                const yearTotalEbitEl = document.getElementById(`ebit-total-${year}`);
+                if(yearTotalEbitEl) yearTotalEbitEl.textContent = formatCurrency(yearlyTotals.ebit);
+
+                const yearTotalInterestEl = document.getElementById(`interestExpense-total-${year}`);
+                if(yearTotalInterestEl) yearTotalInterestEl.textContent = formatCurrency(yearlyTotals.interestExpense);
+               
+                const yearTotalEbtEl = document.getElementById(`ebt-total-${year}`);
+                if(yearTotalEbtEl) yearTotalEbtEl.textContent = formatCurrency(yearlyTotals.ebt);
+            }
+        }
+
+        function updateFinancialSummary(allYearlyTotals) {
+            let accumulatedProfit = 0;
+            let openingCashBalance = 0;
+            let openingLoanBalance = getNumber('initial-debt');
+            let cumulativeDividends = 0;
+            let bepYear = "Not Reached";
+            const initialEquity = getNumber('initial-equity');
+
+            years.forEach(year => {
+                const totals = allYearlyTotals[year];
+                accumulatedProfit += totals.eat;
+                cumulativeDividends += totals.dividends;
+
+                if (bepYear === "Not Reached" && cumulativeDividends >= initialEquity && initialEquity > 0) {
+                    bepYear = year;
+                }
+
+                const requiredCapital = totals.cogs + totals.totalOpex;
+               
+                const cashInjection = getNumber(`cash-injection-${year}`);
+                const netProfit = totals.eat;
+                const netCashFlowForYear = netProfit + cashInjection - totals.dividends - totals.principalRepayment;
+                const closingCashBalance = openingCashBalance + netCashFlowForYear;
+
+                const elements = {
+                    pnlRevenue: document.getElementById(`pnl-revenue-${year}`),
+                    pnlCogs: document.getElementById(`pnl-cogs-${year}`),
+                    pnlOpex: document.getElementById(`pnl-opex-${year}`),
+                    pnlTax: document.getElementById(`pnl-tax-${year}`),
+                    pnlNetProfit: document.getElementById(`pnl-netprofit-${year}`),
+                    pnlNetProfitAcc: document.getElementById(`pnl-netprofit-acc-${year}`),
+                    pnlReqCap: document.getElementById(`pnl-reqcap-${year}`),
+                   
+                    ratioGrossMargin: document.getElementById(`ratio-gross-margin-${year}`),
+                    ratioNetProfit: document.getElementById(`ratio-net-profit-${year}`),
+                    ratioOpex: document.getElementById(`ratio-opex-${year}`),
+                    ratioCurrent: document.getElementById(`ratio-current-${year}`),
+                    ratioAssetTurnover: document.getElementById(`ratio-asset-turnover-${year}`),
+                    ratioDebtToEquity: document.getElementById(`ratio-debt-equity-${year}`),
+                    ratioDebtToAsset: document.getElementById(`ratio-debt-asset-${year}`),
+                    ratioCashFlow: document.getElementById(`ratio-cash-flow-${year}`),
+                    ratioRoi: document.getElementById(`ratio-roi-${year}`),
+
+                    amortizationOpening: document.getElementById(`amort-opening-${year}`),
+                    amortizationPayment: document.getElementById(`amort-payment-${year}`),
+                    amortizationInterest: document.getElementById(`amort-interest-${year}`),
+                    amortizationPrincipal: document.getElementById(`amort-principal-${year}`),
+                    amortizationEnding: document.getElementById(`amort-ending-${year}`),
+
+                    cfOpening: document.getElementById(`cf-opening-balance-${year}`),
+                    cfNetProfit: document.getElementById(`cf-netprofit-${year}`),
+                    cfDividends: document.getElementById(`cf-dividends-${year}`),
+                    cfLoanRepayment: document.getElementById(`cf-loan-repayment-${year}`),
+                    cfNetFlow: document.getElementById(`cf-net-flow-${year}`),
+                    cfClosing: document.getElementById(`cf-closing-balance-${year}`),
+                };
+
+                if (elements.pnlRevenue) elements.pnlRevenue.textContent = formatCurrency(totals.revenue);
+                if (elements.pnlCogs) elements.pnlCogs.textContent = formatCurrency(totals.cogs);
+                if (elements.pnlOpex) elements.pnlOpex.textContent = formatCurrency(totals.totalOpex);
+                if (elements.pnlTax) elements.pnlTax.textContent = formatCurrency(totals.tax);
+                if (elements.pnlNetProfit) elements.pnlNetProfit.textContent = formatCurrency(totals.eat);
+                if (elements.pnlNetProfitAcc) elements.pnlNetProfitAcc.textContent = formatCurrency(accumulatedProfit);
+                if (elements.pnlReqCap) elements.pnlReqCap.textContent = formatCurrency(requiredCapital);
+
+                if (elements.ratioGrossMargin) elements.ratioGrossMargin.textContent = formatPercentage(totals.grossMarginRatio);
+                if (elements.ratioNetProfit) elements.ratioNetProfit.textContent = formatPercentage(totals.netProfitMargin);
+                if (elements.ratioOpex) elements.ratioOpex.textContent = formatPercentage(totals.opexRatio);
+                if (elements.ratioCurrent) elements.ratioCurrent.textContent = formatRatio(totals.currentRatio);
+                if (elements.ratioAssetTurnover) elements.ratioAssetTurnover.textContent = formatRatio(totals.assetTurnover);
+                if (elements.ratioDebtToEquity) elements.ratioDebtToEquity.textContent = formatRatio(totals.debtToEquity);
+                if (elements.ratioDebtToAsset) elements.ratioDebtToAsset.textContent = formatRatio(totals.debtToAsset);
+                if (elements.ratioCashFlow) elements.ratioCashFlow.textContent = formatPercentage(totals.cashFlowToRevenue);
+                if (elements.ratioRoi) elements.ratioRoi.textContent = formatPercentage(totals.roi);
+
+                if (elements.amortizationOpening) elements.amortizationOpening.textContent = formatCurrency(openingLoanBalance);
+                if (elements.amortizationPayment) elements.amortizationPayment.textContent = formatCurrency(totals.annualPayment);
+                if (elements.amortizationInterest) elements.amortizationInterest.textContent = formatCurrency(totals.interestExpense);
+                if (elements.amortizationPrincipal) elements.amortizationPrincipal.textContent = formatCurrency(totals.principalRepayment);
+                if (elements.amortizationEnding) elements.amortizationEnding.textContent = formatCurrency(totals.endingLoanBalance);
+
+                if (elements.cfOpening) elements.cfOpening.textContent = formatCurrency(openingCashBalance);
+                if (elements.cfNetProfit) elements.cfNetProfit.textContent = formatCurrency(netProfit);
+                if (elements.cfDividends) elements.cfDividends.textContent = formatCurrency(totals.dividends);
+                if (elements.cfLoanRepayment) elements.cfLoanRepayment.textContent = formatCurrency(totals.principalRepayment);
+                if (elements.cfNetFlow) elements.cfNetFlow.textContent = formatCurrency(netCashFlowForYear);
+                if (elements.cfClosing) elements.cfClosing.textContent = formatCurrency(closingCashBalance);
+               
+                openingCashBalance = closingCashBalance;
+                openingLoanBalance = totals.endingLoanBalance;
+            });
+            const bepEl = document.getElementById('bep-year');
+            const summaryInitialEquityEl = document.getElementById('summary-initial-equity');
+            const summaryCumulativeDividendsEl = document.getElementById('summary-cumulative-dividends');
+
+            if(summaryInitialEquityEl) summaryInitialEquityEl.textContent = formatCurrency(initialEquity);
+            if(summaryCumulativeDividendsEl) summaryCumulativeDividendsEl.textContent = formatCurrency(cumulativeDividends);
+            if(bepEl) bepEl.textContent = bepYear;
+        }
+       
+        function updateYearlyDetails(allYearlyTotals) {
+            financialStructure.forEach(item => {
+                if (item.type === 'calc' || item.type === 'total' || item.type === 'grand-total' || item.type === 'input') {
+                     years.forEach(year => {
+                        const value = allYearlyTotals[year][item.id];
+                        const element = document.getElementById(`yearly-details-${item.id}-${year}`);
+                        if (element && value !== undefined) {
+                            element.textContent = formatCurrency(value);
+                        }
+                    });
+                }
+            });
+        }
+
+        // --- LAYOUT GENERATION ---
+
+        function generateLayout() {
+            const assumptionsContainer = document.getElementById('view-assumptions');
+            const opexAssumptionsContainer = document.getElementById('view-opex-assumptions');
+            const monthlyYearSelector = document.getElementById('monthly-year-selector');
+
+            assumptionsContainer.innerHTML = '';
+            opexAssumptionsContainer.innerHTML = '';
+            monthlyYearSelector.innerHTML = '';
+
+            // Add Global Assumptions Card
+            const globalAssumptionsHTML = `
+                <div class="card">
+                    <h2 class="text-xl font-bold text-slate-700 border-b pb-3 mb-4">Global Assumptions</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-4">
+                        <div>
+                            <label for="corporate-tax-rate" class="label-text">Corporate Tax Rate (%)</label>
+                            <input type="number" id="corporate-tax-rate" class="input-field mt-1" value="22" onkeyup="calculateAll()">
+                        </div>
+                        <div>
+                            <label for="non-current-assets" class="label-text">Initial Non-Current Assets</label>
+                            <input type="text" id="non-current-assets" class="input-field mt-1" value="0" onkeyup="this.onchange()" onchange="formatInput(this); calculateAll();">
+                        </div>
+                         <div>
+                            <label for="dividend-payout-ratio" class="label-text">Dividend Payout Ratio (%)</label>
+                            <input type="number" id="dividend-payout-ratio" class="input-field mt-1" value="0" onkeyup="calculateAll()">
+                        </div>
+                        <div>
+                            <label for="initial-debt" class="label-text">Initial Debt</label>
+                            <input type="text" id="initial-debt" class="input-field mt-1" value="0" onkeyup="this.onchange()" onchange="formatInput(this); calculateAll();">
+                        </div>
+                        <div>
+                            <label for="initial-equity" class="label-text">Initial Equity</label>
+                            <input type="text" id="initial-equity" class="input-field mt-1" value="0" onkeyup="this.onchange()" onchange="formatInput(this); calculateAll();">
+                        </div>
+                        <div class="mt-1">
+                             <label class="label-text">Total Initial Capital</label>
+                             <p id="total-capital" class="calculated-value text-lg p-2 border-b-2 border-slate-200">Rp 0</p>
+                        </div>
+                        <div class="col-start-1">
+                            <label class="label-text">Debt Percentage</label>
+                            <p id="debt-percentage" class="calculated-value text-lg p-2">0.00%</p>
+                        </div>
+                         <div>
+                            <label class="label-text">Equity Percentage</label>
+                            <p id="equity-percentage" class="calculated-value text-lg p-2">0.00%</p>
+                        </div>
+                        <div></div> <!-- Spacer -->
+                        <div>
+                            <label for="annual-interest-rate" class="label-text">Annual Bank Interest Rate (%)</label>
+                            <input type="number" id="annual-interest-rate" class="input-field mt-1" value="5" onkeyup="calculateAll()">
+                        </div>
+                        <div>
+                            <label for="loan-term-years" class="label-text">Loan Term (Years)</label>
+                            <input type="number" id="loan-term-years" class="input-field mt-1" value="5" onkeyup="calculateAll()">
+                        </div>
+                    </div>
+                </div>
+            `;
+            assumptionsContainer.innerHTML += globalAssumptionsHTML;
+            allInputIds.push('corporate-tax-rate', 'non-current-assets', 'initial-debt', 'initial-equity', 'dividend-payout-ratio', 'annual-interest-rate', 'loan-term-years');
+
+
+            years.forEach((year, yearIndex) => {
+                const isFirst = yearIndex === 0;
+               
+                allInputIds.push(`cogs-per-container-${year}`, `sales-margin-${year}`);
+                const revenueAccordionHTML = `
+                    <div class="card">
+                        <button class="accordion-button" onclick="toggleAccordion('revenue-content-${year}')">
+                            <span>${year} Revenue Assumptions</span>
+                            <svg class="w-6 h-6 transform transition-transform ${isFirst ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                        <div id="revenue-content-${year}" class="accordion-content ${isFirst ? '' : 'hidden'}">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div><label for="cogs-per-container-${year}" class="label-text">COGS per Container</label><input type="text" id="cogs-per-container-${year}" class="input-field mt-1" value="0" onkeyup="this.onchange()" onchange="formatInput(this); calculateAll();"></div>
+                                <div><label for="sales-margin-${year}" class="label-text">Sales Margin (%)</label><input type="number" id="sales-margin-${year}" class="input-field mt-1" value="0" onkeyup="calculateAll()"></div>
+                            </div>
+                            <div class="overflow-x-auto"><h3 class="text-lg font-semibold text-slate-700 mb-2">Revenue Breakdown by Containers Sold</h3><table class="w-full border-collapse min-w-[800px]">
+                                <thead><tr><th class="table-header text-left">Month</th><th class="table-header">Containers Sold</th><th class="table-header">Revenue</th><th class="table-header">COGS</th><th class="table-header">Gross Profit</th></tr></thead>
+                                <tbody>
+                                    ${monthLabels.map((label, i) => {
+                                        const inputId = `containers-${year}-${months[i]}`;
+                                        allInputIds.push(inputId);
+                                        return `<tr class="${i % 2 === 0 ? 'bg-white' : 'bg-slate-50'}">
+                                                    <td class="p-2 text-left font-medium text-slate-700">${label}</td>
+                                                    <td class="p-1"><input type="text" id="${inputId}" class="input-field" value="0" onkeyup="this.onchange()" onchange="formatInput(this); calculateAll();"></td>
+                                                    <td id="revenue-calc-${year}-${months[i]}" class="p-2 text-right">Rp 0</td>
+                                                    <td id="cogs-calc-${year}-${months[i]}" class="p-2 text-right">Rp 0</td>
+                                                    <td id="grossprofit-calc-${year}-${months[i]}" class="p-2 text-right font-medium text-blue-600">Rp 0</td>
+                                                </tr>`;
+                                    }).join('')}
+                                    <tr class="bg-slate-100 font-bold">
+                                        <td class="p-2 text-left">Yearly Total</td>
+                                        <td id="containers-total-${year}" class="p-2 text-right">0</td>
+                                        <td id="revenue-calc-total-${year}" class="p-2 text-right">Rp 0</td>
+                                        <td id="cogs-calc-total-${year}" class="p-2 text-right">Rp 0</td>
+                                        <td id="grossprofit-calc-total-${year}" class="p-2 text-right">Rp 0</td>
+                                    </tr>
+                                </tbody></table></div></div></div>`;
+                assumptionsContainer.innerHTML += revenueAccordionHTML;
+
+                const opexAccordionHTML = `
+                    <div class="card">
+                        <button class="accordion-button" onclick="toggleAccordion('opex-content-${year}')">
+                            <span>${year} OPEX Assumptions</span>
+                            <svg class="w-6 h-6 transform transition-transform ${isFirst ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                        <div id="opex-content-${year}" class="accordion-content ${isFirst ? '' : 'hidden'}"><div class="space-y-4">
+                            ${opexItems.map(item => {
+                                const inputId = `${item.id}-assumption-${year}`;
+                                allInputIds.push(inputId);
+                                return `<div class="grid grid-cols-2 items-center gap-4">
+                                            <label for="${inputId}" class="label-text">${item.label}</label>
+                                            <input type="text" id="${inputId}" class="input-field" value="${item.value}" onkeyup="this.onchange()" onchange="formatInput(this); populateOpexForYear(${year});">
+                                        </div>`;
+                            }).join('')}
+                        </div></div></div>`;
+                opexAssumptionsContainer.innerHTML += opexAccordionHTML;
+
+                monthlyYearSelector.innerHTML += `<option value="${year}">${year}</option>`;
+                generateMonthlyTable(year);
+            });
+           
+            generateSummaryTables();
+            generateYearlyDetailsTable();
+
+            monthlyYearSelector.addEventListener('change', (e) => {
+                years.forEach(year => document.getElementById(`monthly-table-${year}`).classList.add('hidden'));
+                document.getElementById(`monthly-table-${e.target.value}`).classList.remove('hidden');
+            });
+        }
+
+        function generateMonthlyTable(year) {
+            const container = document.getElementById('monthly-details-container');
+            const monthlyStructure = financialStructure.filter(item => item.id !== 'tax' && item.id !== 'eat');
+
+            const headHTML = `<tr><th class="table-header table-row-header w-1/5 border-r border-slate-200">Metric</th>${monthLabels.map(m => `<th class="table-header border-r border-slate-200">${m.substring(0,3)}</th>`).join('')}<th class="table-header sticky right-0 bg-slate-200">Annual Total</th></tr>`;
+           
+            const bodyHTML = monthlyStructure.map(item => {
+                if (item.type === 'header') return `<tr class="section-header-row"><td class="p-2 border-y border-slate-200" colspan="14">${item.label}</td></tr>`;
+                if (item.type === 'spacer') return `<tr><td class="h-4" colspan="14"></td></tr>`;
+               
+                const cells = months.map(month => {
+                    const id = `${item.id}-${year}-${month}`;
+                    if (item.type === 'input') {
+                        allInputIds.push(id);
+                        return `<td class="table-cell border-r border-slate-200"><input type="text" id="${id}" class="input-field" placeholder="0" value="0" onkeyup="this.onchange()" onchange="formatInput(this); calculateAll();"></td>`;
+                    }
+                    return `<td class="table-cell border-r border-slate-200"><p id="${id}" class="calculated-value p-2 text-right ${item.class || ''}">Rp 0</p></td>`;
+                }).join('');
+
+                const totalId = item.id ? `${item.id}-total-${year}` : '';
+                return `<tr class="bg-white"><td class="table-row-header border-r border-slate-200 ${item.indent ? 'pl-6' : ''} ${item.class || ''}">${item.label}</td>${cells}<td class="table-cell sticky right-0 bg-white p-2 text-right font-bold"><p id="${totalId}" class="${item.class || ''}">Rp 0</p></td></tr>`;
+            }).join('');
+
+            container.innerHTML += `<table id="monthly-table-${year}" class="w-full border-collapse min-w-[1400px] ${year !== years[0] ? 'hidden' : ''}"><thead>${headHTML}</thead><tbody>${bodyHTML}</tbody></table>`;
+        }
+       
+        function generateYearlyDetailsTable() {
+            const table = document.getElementById('yearly-details-table');
+            const headHTML = `<thead><tr><th class="table-header table-row-header w-1/5 border-r border-slate-200">Metric</th>${years.map(y => `<th class="table-header border-r border-slate-200">${y}</th>`).join('')}</tr></thead>`;
+            const bodyHTML = financialStructure.map(item => {
+                 if (item.type === 'header') return `<tr class="section-header-row"><td class="p-2 border-y border-slate-200" colspan="${years.length + 1}">${item.label}</td></tr>`;
+                if (item.type === 'spacer') return `<tr><td class="h-4" colspan="${years.length + 1}"></td></tr>`;
+
+                const cells = years.map(year => {
+                    const id = `yearly-details-${item.id}-${year}`;
+                    return `<td class="table-cell border-r border-slate-200"><p id="${id}" class="calculated-value p-2 text-right ${item.class || ''}">Rp 0</p></td>`;
+                }).join('');
+                return `<tr class="bg-white"><td class="table-row-header border-r border-slate-200 ${item.indent ? 'pl-6' : ''} ${item.class || ''}">${item.label}</td>${cells}</tr>`;
+            }).join('');
+            table.innerHTML = headHTML + `<tbody>${bodyHTML}</tbody>`;
+        }
+
+        function generateSummaryTables() {
+            const pnlTable = document.getElementById('pnl-summary-table');
+            const cashflowTable = document.getElementById('cashflow-summary-table');
+            const ratiosTable = document.getElementById('ratios-summary-table');
+            const amortizationTable = document.getElementById('amortization-summary-table');
+            const investmentSummaryContainer = document.getElementById('investment-summary-container');
+
+            const pnlBody = years.map(year => `
+                <tr class="bg-white">
+                    <td class="p-2 font-semibold text-slate-800">${year}</td>
+                    <td id="pnl-revenue-${year}" class="p-2 text-right">Rp 0</td>
+                    <td id="pnl-cogs-${year}" class="p-2 text-right">Rp 0</td>
+                    <td id="pnl-opex-${year}" class="p-2 text-right">Rp 0</td>
+                    <td id="pnl-tax-${year}" class="p-2 text-right">Rp 0</td>
+                    <td id="pnl-netprofit-${year}" class="p-2 text-right font-semibold">Rp 0</td>
+                    <td id="pnl-netprofit-acc-${year}" class="p-2 text-right font-semibold">Rp 0</td>
+                    <td id="pnl-reqcap-${year}" class="p-2 text-right text-red-600">Rp 0</td>
+                </tr>`).join('');
+           
+            const ratiosBody = `
+                <tr class="section-header-row"><td class="p-2 border-y border-slate-200" colspan="${years.length + 1}">Profitability Ratios</td></tr>
+                <tr class="bg-white"><td class="table-row-header border-r border-slate-200">Gross Profit Margin</td>${years.map(y => `<td id="ratio-gross-margin-${y}" class="p-2 text-right">0.00%</td>`).join('')}</tr>
+                <tr class="bg-white"><td class="table-row-header border-r border-slate-200">Net Profit Margin</td>${years.map(y => `<td id="ratio-net-profit-${y}" class="p-2 text-right">0.00%</td>`).join('')}</tr>
+                <tr class="bg-white"><td class="table-row-header border-r border-slate-200">OPEX Ratio</td>${years.map(y => `<td id="ratio-opex-${y}" class="p-2 text-right">0.00%</td>`).join('')}</tr>
+               
+                <tr class="section-header-row"><td class="p-2 border-y border-slate-200" colspan="${years.length + 1}">Liquidity Ratios</td></tr>
+                <tr class="bg-white"><td class="table-row-header border-r border-slate-200">Current Ratio</td>${years.map(y => `<td id="ratio-current-${y}" class="p-2 text-right">0.00</td>`).join('')}</tr>
+
+                <tr class="section-header-row"><td class="p-2 border-y border-slate-200" colspan="${years.length + 1}">Leverage Ratios</td></tr>
+                <tr class="bg-white"><td class="table-row-header border-r border-slate-200">Debt-to-Equity Ratio</td>${years.map(y => `<td id="ratio-debt-equity-${y}" class="p-2 text-right">0.00</td>`).join('')}</tr>
+                <tr class="bg-white"><td class="table-row-header border-r border-slate-200">Debt-to-Asset Ratio</td>${years.map(y => `<td id="ratio-debt-asset-${y}" class="p-2 text-right">0.00</td>`).join('')}</tr>
+
+                <tr class="section-header-row"><td class="p-2 border-y border-slate-200" colspan="${years.length + 1}">Efficiency (Activity) Ratios</td></tr>
+                <tr class="bg-white"><td class="table-row-header border-r border-slate-200">Asset Turnover Ratio</td>${years.map(y => `<td id="ratio-asset-turnover-${y}" class="p-2 text-right">0.00</td>`).join('')}</tr>
+
+                <tr class="section-header-row"><td class="p-2 border-y border-slate-200" colspan="${years.length + 1}">Cash Flow & Investment Ratios</td></tr>
+                <tr class="bg-white"><td class="table-row-header border-r border-slate-200">Cash Flow to Revenue Ratio</td>${years.map(y => `<td id="ratio-cash-flow-${y}" class="p-2 text-right">0.00%</td>`).join('')}</tr>
+                <tr class="bg-white"><td class="table-row-header border-r border-slate-200">Return on Investment (ROI)</td>${years.map(y => `<td id="ratio-roi-${y}" class="p-2 text-right">0.00%</td>`).join('')}</tr>
+            `;
+
+             const investmentSummaryHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+                    <div>
+                        <h3 class="label-text">Initial Equity Investment</h3>
+                        <p id="summary-initial-equity" class="calculated-value text-2xl mt-1">Rp 0</p>
+                    </div>
+                    <div>
+                        <h3 class="label-text">Cumulative Dividends Paid</h3>
+                        <p id="summary-cumulative-dividends" class="calculated-value text-2xl mt-1">Rp 0</p>
+                    </div>
+                    <div>
+                        <h3 class="label-text">Investment Break-Even Year</h3>
+                        <p id="bep-year" class="calculated-value text-2xl mt-1 text-green-600">Not Reached</p>
+                    </div>
+                </div>
+            `;
+            if(investmentSummaryContainer) investmentSummaryContainer.innerHTML = investmentSummaryHTML;
+
+            const amortizationBody = years.map(year => `
+                <tr class="bg-white">
+                    <td class="p-2 font-semibold text-slate-800">${year}</td>
+                    <td id="amort-opening-${year}" class="p-2 text-right">Rp 0</td>
+                    <td id="amort-payment-${year}" class="p-2 text-right">Rp 0</td>
+                    <td id="amort-interest-${year}" class="p-2 text-right text-red-600">Rp 0</td>
+                    <td id="amort-principal-${year}" class="p-2 text-right text-green-600">Rp 0</td>
+                    <td id="amort-ending-${year}" class="p-2 text-right font-bold">Rp 0</td>
+                </tr>`).join('');
+
+            const cashflowBody = years.map(year => {
+                allInputIds.push(`cash-injection-${year}`);
+                return `
+                <tr class="bg-white">
+                    <td class="p-2 font-semibold text-slate-800">${year}</td>
+                    <td id="cf-opening-balance-${year}" class="p-2 text-right">Rp 0</td>
+                    <td class="p-1"><input type="text" id="cash-injection-${year}" value="0" class="input-field" onkeyup="this.onchange()" onchange="formatInput(this); calculateAll();"></td>
+                    <td id="cf-netprofit-${year}" class="p-2 text-right">Rp 0</td>
+                    <td id="cf-dividends-${year}" class="p-2 text-right">Rp 0</td>
+                    <td id="cf-loan-repayment-${year}" class="p-2 text-right">Rp 0</td>
+                    <td id="cf-net-flow-${year}" class="p-2 text-right font-semibold">Rp 0</td>
+                    <td id="cf-closing-balance-${year}" class="p-2 text-right font-bold text-green-600">Rp 0</td>
+                </tr>`;
+            }).join('');
+
+            pnlTable.innerHTML = `
+                <thead><tr class="bg-slate-100">
+                    <th class="table-header text-left">Year</th>
+                    <th class="table-header">Revenue</th>
+                    <th class="table-header">COGS</th>
+                    <th class="table-header">Opex</th>
+                    <th class="table-header">Tax</th>
+                    <th class="table-header">Net Profit</th>
+                    <th class="table-header">Net Profit (Acc)</th>
+                    <th class="table-header">Required Capital</th>
+                </tr></thead>
+                <tbody>${pnlBody}</tbody>`;
+           
+            ratiosTable.innerHTML = `
+                <thead><tr class="bg-slate-100">
+                    <th class="table-header text-left w-1/4">Ratio</th>
+                    ${years.map(y => `<th class="table-header">${y}</th>`).join('')}
+                </tr></thead>
+                <tbody>${ratiosBody}</tbody>`;
+           
+            amortizationTable.innerHTML = `
+                 <thead><tr class="bg-slate-100">
+                    <th class="table-header text-left">Year</th>
+                    <th class="table-header">Opening Balance</th>
+                    <th class="table-header">Annual Payment</th>
+                    <th class="table-header">Interest</th>
+                    <th class="table-header">Principal</th>
+                    <th class="table-header">Ending Balance</th>
+                </tr></thead>
+                <tbody>${amortizationBody}</tbody>`;
+
+            cashflowTable.innerHTML = `
+                <thead><tr class="bg-slate-100">
+                    <th class="table-header text-left">Year</th>
+                    <th class="table-header">Opening Cash Balance</th>
+                    <th class="table-header">Cash Injection</th>
+                    <th class="table-header">Net Profit (from Ops)</th>
+                    <th class="table-header">Dividends</th>
+                    <th class="table-header">Loan Principal Repayment</th>
+                    <th class="table-header">Net Cash Flow</th>
+                    <th class="table-header">Closing Cash Balance</th>
+                </tr></thead>
+                <tbody>${cashflowBody}</tbody>`;
+        }
+       
+        function populateOpexForYear(year, shouldCalculate = true) {
+            opexItems.forEach(item => {
+                const assumptionValue = getNumber(`${item.id}-assumption-${year}`);
+                months.forEach(month => {
+                    const inputElement = document.getElementById(`${item.id}-${year}-${month}`);
+                    if (inputElement) {
+                         inputElement.value = new Intl.NumberFormat('de-DE').format(assumptionValue);
+                    }
+                });
+            });
+            if (shouldCalculate) {
+                calculateAll();
+            }
+        }
+
+        function toggleAccordion(contentId) {
+            const content = document.getElementById(contentId);
+            const icon = content.previousElementSibling.querySelector('svg');
+            content.classList.toggle('hidden');
+            icon.classList.toggle('rotate-180');
+        }
+
+        // --- DATA PERSISTENCE & EXPORT ---
+
+        function saveSettings() {
+            const settings = {};
+            allInputIds.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    settings[id] = element.value;
+                }
+            });
+            localStorage.setItem('businessProjectionSettings', JSON.stringify(settings));
+           
+            const saveButton = document.getElementById('save-button');
+            saveButton.textContent = 'Saved!';
+            saveButton.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+            saveButton.classList.add('bg-green-500');
+            setTimeout(() => {
+                saveButton.textContent = 'Save Settings';
+                saveButton.classList.remove('bg-green-500');
+                saveButton.classList.add('bg-blue-600', 'hover:bg-blue-700');
+            }, 2000);
+        }
+
+        function loadSettings() {
+            const savedSettings = localStorage.getItem('businessProjectionSettings');
+            if (savedSettings) {
+                const settings = JSON.parse(savedSettings);
+                allInputIds.forEach(id => {
+                    const element = document.getElementById(id);
+                    if (element && settings[id] !== undefined) {
+                        element.value = settings[id];
+                    }
+                });
+            }
+        }
+
+        function exportToCSV() {
+            let activeViewId;
+            const views = ['assumptions', 'opex-assumptions', 'monthly', 'yearly-details', 'summary'];
+            activeViewId = views.find(v => !document.getElementById(`view-${v}`).classList.contains('hidden')) || 'summary';
+
+            switch (activeViewId) {
+                case 'assumptions': exportRevenueAssumptionsCSV(); break;
+                case 'opex-assumptions': exportOpexAssumptionsCSV(); break;
+                case 'monthly': exportMonthlyDetailsCSV(); break;
+                case 'yearly-details': exportYearlyDetailsCSV(); break;
+                case 'summary': exportFinancialSummaryCSV(); break;
+            }
+        }
+
+        function downloadCSV(csvContent, filename) {
+            const encodedUri = encodeURI("data:text/csv;charset=utf-8," + csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", filename);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function tableToCSVString(tableElement) {
+            let csvString = '';
+            Array.from(tableElement.querySelectorAll('tr')).forEach(row => {
+                let rowData = Array.from(row.querySelectorAll('th, td')).map(cell => {
+                    let cellText = '';
+                    if (cell.querySelector('input')) {
+                        cellText = cell.querySelector('input').value;
+                    } else {
+                        cellText = cell.textContent;
+                    }
+                    // Clean data for CSV: remove currency symbols, thousands separators, and wrap in quotes
+                    return `"${cellText.replace(/Rp|,|\./g, '').replace(/%/g, '').trim()}"`;
+                }).join(',');
+                csvString += rowData + "\n";
+            });
+            return csvString;
+        }
+
+        function exportRevenueAssumptionsCSV() {
+            let csvContent = "Revenue Assumptions\n\n";
+            csvContent += `Corporate Tax Rate (%),"${getNumber('corporate-tax-rate')}"\n`;
+            csvContent += `Initial Non-Current Assets,"${getNumber('non-current-assets')}"\n`;
+            csvContent += `Initial Debt,"${getNumber('initial-debt')}"\n`;
+            csvContent += `Initial Equity,"${getNumber('initial-equity')}"\n\n`;
+            years.forEach(year => {
+                csvContent += `Year,${year}\n`;
+                csvContent += `"COGS per Container","${getNumber(`cogs-per-container-${year}`)}"\n`;
+                csvContent += `"Sales Margin (%)","${getNumber(`sales-margin-${year}`)}"\n\n`;
+                csvContent += "Revenue Breakdown by Containers Sold\n";
+                const table = document.querySelector(`#revenue-content-${year} table`);
+                if(table) csvContent += tableToCSVString(table);
+                csvContent += "\n\n";
+            });
+            downloadCSV(csvContent, "revenue_assumptions.csv");
+        }
+
+        function exportOpexAssumptionsCSV() {
+            let csvContent = "OPEX Assumptions\n\n";
+            years.forEach(year => {
+                csvContent += `Year,${year}\n`;
+                csvContent += "Item,Value\n";
+                opexItems.forEach(item => {
+                    const value = getNumber(`${item.id}-assumption-${year}`);
+                    csvContent += `"${item.label}","${value}"\n`;
+                });
+                csvContent += "\n";
+            });
+            downloadCSV(csvContent, "opex_assumptions.csv");
+        }
+
+        function exportMonthlyDetailsCSV() {
+            const selectedYear = document.getElementById('monthly-year-selector').value;
+            const table = document.getElementById(`monthly-table-${selectedYear}`);
+            let csvContent = `Monthly Financial Details (P&L) - ${selectedYear}\n\n`;
+            if(table) csvContent += tableToCSVString(table);
+            downloadCSV(csvContent, `monthly_details_${selectedYear}.csv`);
+        }
+       
+        function exportYearlyDetailsCSV() {
+            const table = document.getElementById('yearly-details-table');
+            let csvContent = `Yearly Financial Details (P&L)\n\n`;
+            if(table) csvContent += tableToCSVString(table);
+            downloadCSV(csvContent, `yearly_details.csv`);
+        }
+
+        function exportFinancialSummaryCSV() {
+            let csvContent = "";
+            const pnlTable = document.getElementById('pnl-summary-table');
+            const ratiosTable = document.getElementById('ratios-summary-table');
+            const amortizationTable = document.getElementById('amortization-summary-table');
+            const cashflowTable = document.getElementById('cashflow-summary-table');
+
+            csvContent += "Profit and Loss Projection - Summary\n";
+            if(pnlTable) csvContent += tableToCSVString(pnlTable);
+
+            csvContent += "\n\nKey Financial Ratios\n";
+            if(ratiosTable) csvContent += tableToCSVString(ratiosTable);
+           
+            csvContent += "\n\nLoan Amortization Schedule\n";
+            if(amortizationTable) csvContent += tableToCSVString(amortizationTable);
+
+            csvContent += "\n\nCash Flow Projection\n";
+            if(cashflowTable) csvContent += tableToCSVString(cashflowTable);
+           
+            downloadCSV(csvContent, "financial_summary.csv");
+        }
+       
+        // --- INITIALIZATION ---
+
+        function initializeApp() {
+            generateLayout();
+            loadSettings();
+            // Populate all inputs with their default or loaded values before the first calculation
+            years.forEach(year => {
+                populateOpexForYear(year, false); // false to prevent redundant calculation
+                allInputIds.forEach(id => {
+                    const el = document.getElementById(id);
+                    if(!el) return;
+                    if (el.value.includes(',')) return; // Don't format if already has separators
+                    if (el.id.startsWith('cogs-') || el.id.startsWith('containers-') || el.id.startsWith('cash-') || el.id.startsWith('dividend-') || el.id.startsWith('non-current') || el.id.startsWith('initial-') || opexItems.some(item => el.id.startsWith(item.id))) {
+                       formatInput(el);
+                    }
+                });
+            });
+            calculateAll();
+            switchView('assumptions');
+        }
+
+        window.onload = initializeApp;
+    </script>
+</body>
+</html>
+
